@@ -1,5 +1,5 @@
 import pygame
-from Chess import Chess_engine
+from Chess import Chess_Engine_Advance
 
 pygame.init()
 WIDTH = HEIGHT = 520
@@ -19,8 +19,8 @@ def main():
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     clock = pygame.time.Clock()
     screen.fill(pygame.Color("white"))
-    gs = Chess_engine.GameState()
-    validMoves = gs.getValidMove()
+    gs = Chess_Engine_Advance.GameState()
+    validMoves = gs.getValidMoves()
     moveMade = False
     loadImages()
     running = True
@@ -41,7 +41,7 @@ def main():
                     sqSelected = (row, col)
                     playerClicks.append(sqSelected)
                 if len(playerClicks) == 2:
-                    move = Chess_engine.Move(playerClicks[0], playerClicks[1], gs.board)
+                    move = Chess_Engine_Advance.Move(playerClicks[0], playerClicks[1], gs.board)
                     print(move.getChessNotation())
                     if move in validMoves:
                         gs.makeMove(move)
@@ -55,7 +55,7 @@ def main():
                     moveMade = True
 
         if moveMade:
-            validMoves = gs.getValidMove()
+            validMoves = gs.getValidMoves()
             moveMade = False
 
         drawGameState(screen, gs)
