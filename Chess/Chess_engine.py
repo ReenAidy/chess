@@ -21,23 +21,23 @@ class GameState:
 
     def makeMove(self, move):
         self.board[move.startRow][move.startCol] = "--"
-        self.board[move.endRow][move.endCol] = move.pieceMove
+        self.board[move.endRow][move.endCol] = move.pieceMoved
         self.moveLog.append(move)
         self.whiteToMove = not self.whiteToMove
-        if move.pieceMove == "wK":
+        if move.pieceMoved == "wK":
             self.whiteKingLocation = (move.endRow, move.endCol)
-        elif move.pieceMove == "bK":
+        elif move.pieceMoved == "bK":
             self.blackKingLocation = (move.endRow, move.endCol)
 
     def undoMove(self):
         if len(self.moveLog) != 0:
             move = self.moveLog.pop()
-            self.board[move.startRow][move.startCol] = move.pieceMove
+            self.board[move.startRow][move.startCol] = move.pieceMoved
             self.board[move.endRow][move.endCol] = move.pieceCaptured
             self.whiteToMove = not self.whiteToMove
-            if move.pieceMove == "wK":
+            if move.pieceMoved == "wK":
                 self.whiteKingLocation = (move.startRow, move.startCol)
-            elif move.pieceMove == "bK":
+            elif move.pieceMoved == "bK":
                 self.blackKingLocation = (move.startRow, move.startCol)
 
     def getValidMove(self):
