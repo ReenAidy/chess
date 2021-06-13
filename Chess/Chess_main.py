@@ -1,3 +1,4 @@
+import blue as blue
 import pygame
 from Chess import Chess_Engine_Advance
 
@@ -61,13 +62,30 @@ def main():
             validMoves = gs.getValidMoves()
             moveMade = False
 
-        drawGameState(screen, gs)
+        drawGameState(screen, gs, validMoves, sqSelected)
         clock.tick(MAX_FPS)
         pygame.display.flip()
 
 
-def drawGameState(screen, gs):
+def highlightSquare(screen, gs, validMoves, sqSelected):
+    if sqSelected != ():
+        r, c = sqSelected
+        if gs.board[r][c][0] == ('w' if gs.whiteToMove else 'b'):
+            # highlight selected square
+            s = pygame.Surface((SQ_SIZE, SQ_SIZE))
+            s.set_alpha(100)  # transparency value
+            s.fill(pygame.Color('blue'))
+            screen.blit(s, (c * SQ_SIZE, r * SQ_SIZE))
+            # highlight moves from that square
+            s.fill(pygame.Color('yellow'))
+            for move in validMoves:
+                if move.startRow == r and move.startCol == c:
+                    screen.blit(s, (move.endCol * SQ_SIZE, move.endRow * SQ_SIZE))
+
+
+def drawGameState(screen, gs, validMoves, sqSelected):
     drawBoard(screen)
+    highlightSquare(screen, gs, validMoves, sqSelected)
     drawPieces(screen, gs.board)
 
 
