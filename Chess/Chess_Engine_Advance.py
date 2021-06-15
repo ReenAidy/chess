@@ -152,6 +152,13 @@ class GameState:
                 self.getKingMoves(kingRow, kingCol, moves)
         else:
             moves = self.getAllPossibleMoves()
+
+        if len(moves)==0:
+            if self.inCheck:
+                self.checkMate = True
+            else:
+                self.stealMate = True
+
         if self.whiteToMove:
             self.getCastleMoves(kingRow, kingCol, moves)  # Extra
         else:
