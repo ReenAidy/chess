@@ -1,6 +1,5 @@
-import blue as blue
 import pygame
-from Chess import Chess_Engine_Advance
+from Chess import Chess_Engine_Advance, SmartMoveFinderAI
 
 pygame.init()
 WIDTH = HEIGHT = 520
@@ -29,12 +28,16 @@ def main():
     sqSelected = ()
     playerClicks = []
     gameOver = False
+    playerOne = False  # if Human is playing white, then this will be true. If AI is playing  this will be false
+    playerTwo = False  # same as above but for black
+
     while running:
+        humanTurn = (gs.whiteToMove and playerOne) or (gs.whiteToMove and playerTwo)
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
                 running = False
             elif e.type == pygame.MOUSEBUTTONDOWN:
-                if not gameOver:
+                if not gameOver and humanTurn:
                     location = pygame.mouse.get_pos()
                     col = location[0] // SQ_SIZE
                     row = location[1] // SQ_SIZE
@@ -62,6 +65,7 @@ def main():
                     gs.undoMove()
                     moveMade = True
                     animate = False
+                    gameOver = False
 
                 if e.key == pygame.K_r:
                     gs = Chess_Engine_Advance.GameState()
@@ -71,6 +75,15 @@ def main():
                     moveMade = False
                     animate = False
                     gameOver = False
+
+        # AI move finder logic
+        if not gameOver and not humanTurn and len(validMoves) != 0:
+            AIMove = SmartMoveFinderAI.findBestMoveMinMax(gs, validMoves)
+            if AIMove is None:
+                AIMove = SmartMoveFinderAI.findRandomMove(validMoves)
+            gs.makeMove(AIMove)
+            moveMade = True
+            animate = True
 
         if moveMade:
             if animate:
@@ -87,7 +100,7 @@ def main():
                 drawText(screen, 'Black Wins by Checkmate')
             else:
                 drawText(screen, 'White Wins by Checkmate')
-        elif gs.stealMate:
+        elif gs.staleMate:
             drawText(screen, 'Stalemate')
 
         clock.tick(MAX_FPS)
@@ -159,11 +172,11 @@ def animateMove(move, screen, board, clock):
 
 def drawText(screen, text):
     font = pygame.font.SysFont('Helvetca', 42, True, False)
-    textObject = font.render(text, 0, pygame.Color('Black'))
+    textObject = font.render(text, False, pygame.Color('Black'))
     textLocation = pygame.Rect(0, 0, WIDTH, HEIGHT).move(WIDTH / 2 - textObject.get_width() / 2,
                                                          HEIGHT / 2 - textObject.get_height() / 2)
     screen.blit(textObject, textLocation)
-    textObject = font.render(text, 0, pygame.Color('Red'))
+    textObject = font.render(text, False, pygame.Color('Red'))
     screen.blit(textObject, textLocation.move(2, 2))
 
 

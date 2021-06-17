@@ -19,7 +19,7 @@ class GameState:
         self.inCheck = False
         self.pins = []
         self.checks = []
-        self.stealMate = False
+        self.staleMate = False
         self.checkMate = False
         self.enPassantPossible = ()
         self.currentCastlingRight = CastleRights(True, True, True, True)
@@ -96,6 +96,9 @@ class GameState:
                     self.board[move.endRow][move.endCol - 2] = self.board[move.endRow][move.endCol + 1]
                     self.board[move.endRow][move.endCol + 1] = "--"
 
+            self.checkMate = False
+            self.staleMate = False
+
     def updateCastleRights(self, move):
         if move.pieceMoved == "wK":
             self.currentCastlingRight.wks = False
@@ -153,11 +156,11 @@ class GameState:
         else:
             moves = self.getAllPossibleMoves()
 
-        if len(moves)==0:
+        if len(moves) == 0:
             if self.inCheck:
                 self.checkMate = True
             else:
-                self.stealMate = True
+                self.staleMate = True
 
         if self.whiteToMove:
             self.getCastleMoves(kingRow, kingCol, moves)  # Extra
@@ -345,7 +348,6 @@ class GameState:
                         self.whiteKingLocation = (r, c)
                     else:
                         self.blackKingLocation = (r, c)
-        # self.getCastleMoves(r, c, moves, allyColour)
 
     def getCastleMoves(self, r, c, moves):
         if self.squareUnderAttack(r, c):
