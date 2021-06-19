@@ -3,8 +3,7 @@ import random
 pieceScore = {"K": 0, "Q": 10, "R": 5, "B": 3, "N": 3, "p": 1}
 CHECKMATE = 1000
 STALEMATE = 0
-DEPTH = 3
-
+DEPTH = 2
 
 nextMove = None
 
@@ -13,7 +12,7 @@ def findRandomMove(validMoves):
     return validMoves[random.randint(0, len(validMoves) - 1)]
 
 
-def findBestMove(gs, validMoves):
+def findBestMoveMinMaxNoRecursion(gs, validMoves):
     turnMultiplier = 1 if gs.whiteToMove else -1
     opponentMinMaxScore = CHECKMATE
     bestPlayerMove = None
@@ -44,10 +43,12 @@ Helper method to make first recursive call
 '''
 
 
-def findBestMoveMinMax(gs, validMoves):
+def findBestMove(gs, validMoves):
     global nextMove
     nextMove = None
-    findMoveMinMax(gs, validMoves, DEPTH, gs.whiteToMove)
+    random.shuffle(validMoves)
+    # findMoveMinMax(gs, validMoves, DEPTH, gs.whiteToMove)
+    findMoveNegaMaxAlfaBeta(gs, validMoves, DEPTH,-CHECKMATE, CHECKMATE, 1 if gs.whiteToMove else -1)
     return nextMove
 
 
@@ -81,6 +82,47 @@ def findMoveMinMax(gs, validMoves, depth, whiteToMove):
                     nextMove = move
             gs.undoMove()
         return minScore
+
+
+def findMoveNegaMax(gs, validMoves, depth, turnMultiplier):
+    global nextMove
+    if depth == 0:
+        return turnMultiplier * scoreBoard(gs)
+
+    maxScore = -CHECKMATE
+    for move in validMoves:
+        gs.makeMove(move)
+        nextMoves = gs.getValidMoves()
+        score = - findMoveNegaMax(gs, nextMoves, depth - 1, -turnMultiplier)
+        if score > maxScore:
+            maxScore = score
+            if depth == DEPTH:
+                nextMove = move
+        gs.undoMove()
+    return maxScore
+
+
+def findMoveNegaMaxAlfaBeta(gs, validMoves, depth, alfa, beta, turnMultiplier):
+    global nextMove
+    if depth == 0:
+        return turnMultiplier * scoreBoard(gs)
+
+    maxScore = -CHECKMATE
+    for move in validMoves:
+        gs.makeMove(move)
+        nextMoves = gs.getValidMoves()
+        score = - findMoveNegaMaxAlfaBeta(gs, nextMoves, depth - 1, -beta, -alfa, -turnMultiplier)
+        if score > maxScore:
+            maxScore = score
+            if depth == DEPTH:
+                nextMove = move
+        gs.undoMove()
+        if maxScore > alfa:  # pruning happened
+            alfa= maxScore
+
+        if alfa >= beta:
+            break
+    return maxScore
 
 
 '''

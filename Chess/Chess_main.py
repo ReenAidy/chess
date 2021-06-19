@@ -2,9 +2,11 @@ import pygame
 from Chess import Chess_Engine_Advance, SmartMoveFinderAI
 
 pygame.init()
-WIDTH = HEIGHT = 520
+BOARD_WIDTH = BOARD_HEIGHT = 520
+MOVE_LOG_PANEL_WIDTH = 250
+MOVE_LOG_PANEL_HEIGHT = BOARD_HEIGHT
 DIMENSION = 8
-SQ_SIZE = WIDTH // DIMENSION
+SQ_SIZE = BOARD_WIDTH // DIMENSION
 MAX_FPS = 15
 IMAGES = {}
 
@@ -16,9 +18,10 @@ def loadImages():
 
 
 def main():
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    screen = pygame.display.set_mode((BOARD_WIDTH + MOVE_LOG_PANEL_WIDTH, BOARD_HEIGHT))
     clock = pygame.time.Clock()
     screen.fill(pygame.Color("white"))
+    moveLogFont = pygame.font.SysFont('Arial', 14, False, False)
     gs = Chess_Engine_Advance.GameState()
     validMoves = gs.getValidMoves()
     moveMade = False
@@ -28,11 +31,11 @@ def main():
     sqSelected = ()
     playerClicks = []
     gameOver = False
-    playerOne = False  # if Human is playing white, then this will be true. If AI is playing  this will be false
-    playerTwo = False  # same as above but for black
+    playerOne = True  # if Human is playing white, then this will be true. If AI is playing  this will be false
+    playerTwo = True  # same as above but for black
 
     while running:
-        humanTurn = (gs.whiteToMove and playerOne) or (gs.whiteToMove and playerTwo)
+        humanTurn = (gs.whiteToMove and playerOne) or (not gs.whiteToMove and playerTwo)
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
                 running = False
@@ -41,7 +44,8 @@ def main():
                     location = pygame.mouse.get_pos()
                     col = location[0] // SQ_SIZE
                     row = location[1] // SQ_SIZE
-                    if sqSelected == (row, col):
+                    if sqSelected == (row, col) or col >= 8:
+                        # the user clicked the same square or user clicked mouse log
                         sqSelected = ()
                         playerClicks = []
                     else:
@@ -78,7 +82,7 @@ def main():
 
         # AI move finder logic
         if not gameOver and not humanTurn and len(validMoves) != 0:
-            AIMove = SmartMoveFinderAI.findBestMoveMinMax(gs, validMoves)
+            AIMove = SmartMoveFinderAI.findBestMove(gs, validMoves)
             if AIMove is None:
                 AIMove = SmartMoveFinderAI.findRandomMove(validMoves)
             gs.makeMove(AIMove)
@@ -92,19 +96,31 @@ def main():
             moveMade = False
             animate = False
 
-        drawGameState(screen, gs, validMoves, sqSelected)
+        drawGameState(screen, gs, validMoves, sqSelected, moveLogFont)
 
-        if gs.checkMate:
+        if gs.checkMate or gs.staleMate:
             gameOver = True
-            if gs.whiteToMove:
-                drawText(screen, 'Black Wins by Checkmate')
-            else:
-                drawText(screen, 'White Wins by Checkmate')
-        elif gs.staleMate:
-            drawText(screen, 'Stalemate')
+            drawEndGameText(screen,
+                            'Stalemate' if gs.staleMate else 'Black Wins by Checkmate' if gs.whiteToMove else 'White Wins by Checkmate')
 
         clock.tick(MAX_FPS)
         pygame.display.flip()
+
+
+def drawGameState(screen, gs, validMoves, sqSelected, moveLogFont):
+    drawBoard(screen)
+    highlightSquare(screen, gs, validMoves, sqSelected)
+    drawPieces(screen, gs.board)
+    drawMoveLog(screen, gs, moveLogFont)
+
+
+def drawBoard(screen):
+    global colors
+    colors = [pygame.Color("white"), pygame.Color("grey")]
+    for r in range(DIMENSION):
+        for c in range(DIMENSION):
+            color = colors[((r + c) % 2)]
+            pygame.draw.rect(screen, color, pygame.Rect(c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
 
 
 def highlightSquare(screen, gs, validMoves, sqSelected):
@@ -123,27 +139,38 @@ def highlightSquare(screen, gs, validMoves, sqSelected):
                     screen.blit(s, (move.endCol * SQ_SIZE, move.endRow * SQ_SIZE))
 
 
-def drawGameState(screen, gs, validMoves, sqSelected):
-    drawBoard(screen)
-    highlightSquare(screen, gs, validMoves, sqSelected)
-    drawPieces(screen, gs.board)
-
-
-def drawBoard(screen):
-    global colors
-    colors = [pygame.Color("white"), pygame.Color("grey")]
-    for r in range(DIMENSION):
-        for c in range(DIMENSION):
-            color = colors[((r + c) % 2)]
-            pygame.draw.rect(screen, color, pygame.Rect(c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
-
-
 def drawPieces(screen, board):
     for r in range(DIMENSION):
         for c in range(DIMENSION):
             piece = board[r][c]
             if piece != "--":
                 screen.blit(IMAGES[piece], pygame.Rect(c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
+
+
+def drawMoveLog(screen, gs, font):
+    moveLogRect = pygame.Rect(BOARD_WIDTH, 0, MOVE_LOG_PANEL_WIDTH, MOVE_LOG_PANEL_HEIGHT)
+    pygame.draw.rect(screen, pygame.Color("Black"), moveLogRect)
+    moveLog = gs.moveLog
+    moveTexts = []
+    for i in range(0, len(moveLog), 2):
+        moveString = "    " + str(i // 2 + 1) + ". " + moveLog[i].getChessNotation() + " "
+        if i + 1 < len(moveLog):
+            moveString += moveLog[i + 1].getChessNotation()
+        moveTexts.append(moveString)
+
+    movesPerRow = 3
+    padding = 5
+    lineSpacing = 1
+    textY = padding
+    for i in range(0, len(moveTexts), movesPerRow):
+        text = ""
+        for j in range(movesPerRow):
+            if i + j < len(moveTexts):
+                text += moveTexts[i + j]
+        textObject = font.render(text, True, pygame.Color('White'))
+        textLocation = moveLogRect.move(padding, textY)
+        screen.blit(textObject, textLocation)
+        textY += textObject.get_height() + lineSpacing
 
 
 def animateMove(move, screen, board, clock):
@@ -162,6 +189,9 @@ def animateMove(move, screen, board, clock):
         pygame.draw.rect(screen, color, endSquare)
         # draw capture piece onto rectangle
         if move.pieceCaptured != '--':
+            if move.isEnpassantMove:
+                enPassantRow = move.endRow + 1 if move.pieceCaptured[0] == 'b' else move.endRow - 1
+                endSquare = pygame.Rect(move.endCol * SQ_SIZE, enPassantRow * SQ_SIZE, SQ_SIZE, SQ_SIZE)
             screen.blit(IMAGES[move.pieceCaptured], endSquare)
 
         # draw moving piece
@@ -170,11 +200,11 @@ def animateMove(move, screen, board, clock):
         clock.tick(60)
 
 
-def drawText(screen, text):
+def drawEndGameText(screen, text):
     font = pygame.font.SysFont('Helvetca', 42, True, False)
     textObject = font.render(text, False, pygame.Color('Black'))
-    textLocation = pygame.Rect(0, 0, WIDTH, HEIGHT).move(WIDTH / 2 - textObject.get_width() / 2,
-                                                         HEIGHT / 2 - textObject.get_height() / 2)
+    textLocation = pygame.Rect(0, 0, BOARD_WIDTH, BOARD_HEIGHT).move(BOARD_WIDTH / 2 - textObject.get_width() / 2,
+                                                                     BOARD_HEIGHT / 2 - textObject.get_height() / 2)
     screen.blit(textObject, textLocation)
     textObject = font.render(text, False, pygame.Color('Red'))
     screen.blit(textObject, textLocation.move(2, 2))
