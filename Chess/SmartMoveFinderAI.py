@@ -60,7 +60,7 @@ piecePositionScores = {"N": knightScores, "B":bishopScores, "Q":queenScores, "R"
 
 CHECKMATE = 1000
 STALEMATE = 0
-DEPTH = 3
+DEPTH = 4
 
 nextMove = None
 
@@ -100,13 +100,13 @@ Helper method to make first recursive call
 '''
 
 
-def findBestMove(gs, validMoves):
+def findBestMove(gs, validMoves, returnQueue):
     global nextMove
     nextMove = None
     random.shuffle(validMoves)
     # findMoveMinMax(gs, validMoves, DEPTH, gs.whiteToMove)
     findMoveNegaMaxAlfaBeta(gs, validMoves, DEPTH, -CHECKMATE, CHECKMATE, 1 if gs.whiteToMove else -1)
-    return nextMove
+    returnQueue.put(nextMove)
 
 
 def findMoveMinMax(gs, validMoves, depth, whiteToMove):
