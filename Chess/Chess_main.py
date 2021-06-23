@@ -1,5 +1,6 @@
 import pygame
 from Chess import Chess_Engine_Advance, SmartMoveFinderAI
+from multiprocessing import Process, Queue
 
 pygame.init()
 BOARD_WIDTH = BOARD_HEIGHT = 520
@@ -31,8 +32,10 @@ def main():
     sqSelected = ()
     playerClicks = []
     gameOver = False
-    playerOne = True  # if Human is playing white, then this will be true. If AI is playing  this will be false
-    playerTwo = True  # same as above but for black
+    playerOne = False  # if Human is playing white, then this will be true. If AI is playing  this will be false
+    playerTwo = False  # same as above but for black
+    AIThinking = False
+    moveFinderProcess = None
 
     while running:
         humanTurn = (gs.whiteToMove and playerOne) or (not gs.whiteToMove and playerTwo)
@@ -53,7 +56,6 @@ def main():
                         playerClicks.append(sqSelected)
                     if len(playerClicks) == 2:
                         move = Chess_Engine_Advance.Move(playerClicks[0], playerClicks[1], gs.board)
-                        print(move.getChessNotation())
                         for i in range(len(validMoves)):
                             if move == validMoves[i]:
                                 gs.makeMove(validMoves[i])
@@ -153,9 +155,9 @@ def drawMoveLog(screen, gs, font):
     moveLog = gs.moveLog
     moveTexts = []
     for i in range(0, len(moveLog), 2):
-        moveString = "    " + str(i // 2 + 1) + ". " + moveLog[i].getChessNotation() + " "
+        moveString = "    " + str(i // 2 + 1) + ". " + str(moveLog[i]) + " "
         if i + 1 < len(moveLog):
-            moveString += moveLog[i + 1].getChessNotation()
+            moveString += str(moveLog[i + 1])
         moveTexts.append(moveString)
 
     movesPerRow = 3
